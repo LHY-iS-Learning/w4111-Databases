@@ -1,4 +1,3 @@
-
 from src.BaseDataTable import BaseDataTable
 import copy
 import csv
@@ -56,13 +55,13 @@ class CSVDataTable(BaseDataTable):
             rows_to_print = self._rows[0:temp_r]
             keys = self._rows[0].keys()
 
-            for i in range(0,CSVDataTable._no_of_separators):
+            for i in range(0, CSVDataTable._no_of_separators):
                 tmp_row = {}
                 for k in keys:
                     tmp_row[k] = "***"
                 rows_to_print.append(tmp_row)
 
-            rows_to_print.extend(self._rows[int(-1*temp_r)-1:-1])
+            rows_to_print.extend(self._rows[int(-1 * temp_r) - 1:-1])
 
         df = pd.DataFrame(rows_to_print)
         result += "\nSome Rows: = \n" + str(df)
@@ -92,6 +91,16 @@ class CSVDataTable(BaseDataTable):
         Write the information back to a file.
         :return: None
         """
+        dir_info = self._data["connect_info"].get("directory")
+        file_n = self._data["connect_info"].get("file_name")
+        full_name = os.path.join(dir_info, file_n)
+
+        with open(full_name, "w", newline='', encoding='utf-8') as csv_file:
+            field_name = self._rows[0].keys()
+            writer = csv.DictWriter(csv_file, fieldnames=field_name)
+            writer.writeheader()
+            for r in self._rows:
+                writer.writerow(r)
 
     @staticmethod
     def matches_template(row, template):
@@ -105,6 +114,15 @@ class CSVDataTable(BaseDataTable):
 
         return result
 
+    def _copy_select_fields(self, result_dic, field_list = None):
+        if field_list is None:
+            return result_dic
+        else:
+            res = {}
+            for field in field_list:
+                res[field] = result_dic[field]
+            return res
+
     def find_by_primary_key(self, key_fields, field_list=None):
         """
 
@@ -113,6 +131,9 @@ class CSVDataTable(BaseDataTable):
         :return: None, or a dictionary containing the requested fields for the record identified
             by the key.
         """
+
+        # TODO: handle no primary key
+        # TODO: error field_list
         primary_key_lst = self._data.get("key_columns")
         result_dic = None
         for row in self._rows:
@@ -128,13 +149,7 @@ class CSVDataTable(BaseDataTable):
         if result_dic is None:
             return None
 
-        if field_list is None:
-            return result_dic
-        else:
-            res = {}
-            for field in field_list:
-                res[field] = result_dic[field]
-            return res
+        return self._copy_select_fields(result_dic, field_list)
 
     def find_by_template(self, template, field_list=None, limit=None, offset=None, order_by=None):
         """
@@ -147,7 +162,27 @@ class CSVDataTable(BaseDataTable):
         :return: A list containing dictionaries. A dictionary is in the list representing each record
             that matches the template. The dictionary only contains the requested fields.
         """
-        pass
+        # TODO: check match template, if so what is row
+        # TODO: check if template empty
+        result_list = []
+
+        for row in self._rows:
+            all_match = True
+            for k,v in template.items():
+                if row[k] != v:
+                    all_match = False
+                    break
+            if all_match:
+                result_list.append(dict(row))
+
+        if field_list is None:
+            return result_list
+        else:
+            result = []
+            for result_dic in result_list:
+                tmp = self._copy_select_fields(result_dic, field_list)
+                result.append(tmp)
+            return result
 
     def delete_by_key(self, key_fields):
         """
@@ -194,4 +229,3 @@ class CSVDataTable(BaseDataTable):
 
     def get_rows(self):
         return self._rows
-
