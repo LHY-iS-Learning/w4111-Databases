@@ -10,6 +10,7 @@ import pandas as pd
 pd.set_option("display.width", 256)
 pd.set_option('display.max_columns', 20)
 
+
 class CSVDataTable(BaseDataTable):
     """
     The implementation classes (XXXDataTable) for CSV database, relational, etc. with extend the
@@ -112,7 +113,28 @@ class CSVDataTable(BaseDataTable):
         :return: None, or a dictionary containing the requested fields for the record identified
             by the key.
         """
-        pass
+        primary_key_lst = self._data.get("key_columns")
+        result_dic = None
+        for row in self._rows:
+            all_correct = True
+            for key in primary_key_lst:
+                if row[key] not in key_fields:
+                    all_correct = False
+                    break
+            if all_correct:
+                result_dic = dict(row)
+                break
+
+        if result_dic is None:
+            return None
+
+        if field_list is None:
+            return result_dic
+        else:
+            res = {}
+            for field in field_list:
+                res[field] = result_dic[field]
+            return res
 
     def find_by_template(self, template, field_list=None, limit=None, offset=None, order_by=None):
         """
