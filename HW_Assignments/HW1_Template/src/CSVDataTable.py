@@ -82,6 +82,7 @@ class CSVDataTable(BaseDataTable):
         this_key_col_val = this_key_col_val[:-1]
         if this_key_col_val not in self._primary_keys_set:
             self._rows.append(r)
+            print(r)
             self._primary_keys_set.add(this_key_col_val)
 
     def _load(self):
@@ -143,6 +144,11 @@ class CSVDataTable(BaseDataTable):
                 res[field] = result_dic[field]
             return res
 
+    def validate_key_fields(self, key_fields):
+        if not len(key_fields) or len(key_fields) != len(self._data["key_columns"]):
+            raise Exception("Invalid key fields!")
+        return True
+
     def validate_template_and_fields(self, template=None, fields=None):
         col_set = set(self._data["table_columns"])
 
@@ -169,7 +175,7 @@ class CSVDataTable(BaseDataTable):
             by the key.
         """
 
-        # TODO: handle no primary key
+        self.validate_key_fields(key_fields)
         self.validate_template_and_fields(fields=field_list)
 
         primary_key_lst = self._data.get("key_columns")
@@ -200,8 +206,7 @@ class CSVDataTable(BaseDataTable):
         :return: A list containing dictionaries. A dictionary is in the list representing each record
             that matches the template. The dictionary only contains the requested fields.
         """
-        # TODO: check match template, if so what is row
-        # TODO: check if template empty
+        self.validate_template_and_fields(template=template, fields=field_list)
         result_list = []
 
         for row in self._rows:
@@ -225,7 +230,13 @@ class CSVDataTable(BaseDataTable):
         :param template: A template.
         :return: A count of the rows deleted.
         """
-        pass
+        self.validate_key_fields(key_fields)
+        row = self.find_by_primary_key(key_fields)
+        if row is not None:
+            self._rows.remove(row)
+            return 1
+        else:
+            return 0
 
     def delete_by_template(self, template):
         """
@@ -233,7 +244,40 @@ class CSVDataTable(BaseDataTable):
         :param template: Template to determine rows to delete.
         :return: Number of rows deleted.
         """
-        pass
+        self.validate_template_and_fields(template=template)
+        rows = self.find_by_template(template)
+        if rows is not None:
+            for r in rows:
+                self._rows.remove(r)
+            return len(rows)
+        else:
+            return 0
+
+    def modify_list_content(self, old, new_value):
+        index = self._rows.index(old)
+        if self._data["key_columns"] is None or not len(set(new_value.keys()).intersection(set(self._data["key_columns"]))):
+            for k, v in new_value.items():
+                old[k] = v
+            return index, False, old, -1, -1
+        else:
+            key_col = self._data["key_columns"]
+            old_key_val = ""
+            new_key_val = ""
+            for key in key_col:
+                old_key_val += old[key] + "_"
+            for k, v in new_value.items():
+                old[k] = v
+            for key in key_col:
+                new_key_val += old[key] + "_"
+            old_key_val = old_key_val[:-1]
+            new_key_val = new_key_val[:-1]
+            if not new_key_val in self._primary_keys_set:
+                return index, True, old, old_key_val, new_key_val
+            else:
+                return -1,True,-1,-1,-1
+
+
+
 
     def update_by_key(self, key_fields, new_values):
         """
@@ -242,6 +286,21 @@ class CSVDataTable(BaseDataTable):
         :param new_values: A dict of field:value to set for updated row.
         :return: Number of rows updated.
         """
+        self.validate_template_and_fields(fields=[x for x in new_values.keys()])
+        self.validate_key_fields(key_fields)
+        row = self.find_by_primary_key(key_fields)
+        if row is not None:
+            index, modify_primary, new, old_key_val, new_key_val = self.modify_list_content(row, new_values)
+            if index != -1:
+                self._rows[index] = new
+                if modify_primary:
+                    self._primary_keys_set.remove(old_key_val)
+                    self._primary_keys_set.add(new_key_val)
+                return 1
+            else:
+                raise Exception("Primary Keys has to be unique!")
+        else:
+            return 0
 
     def update_by_template(self, template, new_values):
         """
@@ -250,7 +309,28 @@ class CSVDataTable(BaseDataTable):
         :param new_values: New values to set for matching fields.
         :return: Number of rows updated.
         """
-        pass
+        self.validate_template_and_fields(template = template, fields=[x for x in new_values.keys()])
+        rows = self.find_by_template(template)
+        if rows is None:
+            return 0
+        else:
+            row_primary_key_pair = []
+            mod_primary = True
+            for row in rows:
+                mod_primary = modify_primary
+                index, modify_primary, new, old_key_val, new_key_val = self.modify_list_content(row, new_values)
+                if index == -1:
+                    raise Exception("Primary Key has to be unique!")
+                else:
+                    if modify_primary:
+                        row_primary_key_pair.append([new, old_key_val, new_key_val])
+                    else:
+                        self._rows[index] = new
+            if mod_primary:
+                self._rows[index] = new
+                self._primary_keys_set.remove(old_key_val)
+                self._primary_keys_set.add(new_key_val)
+            return len(rows)
 
     def insert(self, new_record):
         """
@@ -258,7 +338,9 @@ class CSVDataTable(BaseDataTable):
         :param new_record: A dictionary representing a row to add to the set of records.
         :return: None
         """
-        pass
+        self.validate_template_and_fields(fields=[x for x in new_record.keys()])
+        self._add_row(new_record)
+
 
     def get_rows(self):
         return self._rows
