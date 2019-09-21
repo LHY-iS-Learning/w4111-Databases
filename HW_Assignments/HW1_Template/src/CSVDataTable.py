@@ -71,7 +71,10 @@ class CSVDataTable(BaseDataTable):
         return result
 
     def _add_row(self, r):
-        key_col = list(self._data["key_columns"])
+        if self._data["key_columns"] is None:
+            key_col = []
+        else:
+            key_col = list(self._data["key_columns"])
         if self._rows is None:
             self._rows = []
         this_key_col_val = ""
@@ -82,7 +85,6 @@ class CSVDataTable(BaseDataTable):
         this_key_col_val = this_key_col_val[:-1]
         if this_key_col_val not in self._primary_keys_set:
             self._rows.append(r)
-            print(r)
             self._primary_keys_set.add(this_key_col_val)
 
     def _load(self):
@@ -145,6 +147,8 @@ class CSVDataTable(BaseDataTable):
             return res
 
     def validate_key_fields(self, key_fields):
+        if not self._data["key_columns"] or not len(self._data["key_columns"]):
+            raise Exception("Primary Key has not been setup yet!")
         if not len(key_fields) or len(key_fields) != len(self._data["key_columns"]):
             raise Exception("Invalid key fields!")
         return True
@@ -340,7 +344,6 @@ class CSVDataTable(BaseDataTable):
         """
         self.validate_template_and_fields(fields=[x for x in new_record.keys()])
         self._add_row(new_record)
-
 
     def get_rows(self):
         return self._rows
