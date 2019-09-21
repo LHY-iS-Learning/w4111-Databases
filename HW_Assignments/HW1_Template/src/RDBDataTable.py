@@ -33,14 +33,29 @@ class RDBDataTable(BaseDataTable):
         except Exception as e:
             raise Exception(e)
 
-        cursor = self.cnx.cursor()
         query = "desc {}".format(self._data["table_name"])
-        cursor.execute(query)
-        lst = [column["Field"] for column in cursor.fetchall()]
+        lst = self.exec_query(query).fetchall()
+        lst = [column["Field"] for column in lst]
         self._data["table_columns"] = lst
-        cursor.close()
+
+        self._key_set = set()
+        if key_columns is not None:
+            key_string = self.format_fields_string(key_columns)
+            query = "select {} from {}".format(key_string, self._full_table_name)
+            res = self.exec_query(query).fetchall()
+            for r in res:
+                this_key_val = ""
+                for k,v in r.items():
+                    this_key_val += v + '_'
+                this_key_val = this_key_val[:-1]
+                if this_key_val in self._key_set:
+                    raise Exception("Primary key is not unique!")
+                else:
+                    self._key_set.add(this_key_val)
 
     def validate_key_fields(self, key_fields):
+        if not self._data["key_columns"] or not len(self._data["key_columns"]):
+            raise Exception("Primary Key has not been setup yet!")
         if not len(key_fields) or len(key_fields) != len(self._data["key_columns"]):
             raise Exception("Invalid key fields!")
         return True
@@ -77,7 +92,6 @@ class RDBDataTable(BaseDataTable):
     def format_template_string(template_input):
         key_string = ""
         template = "{} = \"{}\""
-        print(template_input)
         for k, v in template_input.items():
             key_string += template.format(k, v)
             key_string += " AND "
@@ -95,8 +109,8 @@ class RDBDataTable(BaseDataTable):
     def exec_query(self, query):
         cursor = self.cnx.cursor()
         cursor.execute(query)
-        res = cursor.fetchall()
-        return res
+        self.cnx.commit()
+        return cursor
 
     def find_by_primary_key(self, key_fields, field_list=None):
         """
@@ -112,9 +126,11 @@ class RDBDataTable(BaseDataTable):
         field_string = self.format_fields_string(field_list)
         key_string = self.format_key_string(key_fields)
         query = "SELECT {} FROM {} WHERE {};".format(field_string, self._full_table_name, key_string)
-        res = self.exec_query(query)
+        res = self.exec_query(query).fetchall()
         if len(res) > 1:
             raise Exception("Primary Key is not unique!")
+        elif len(res) == 0:
+            return None
         else:
             return res[0]
 
@@ -133,8 +149,8 @@ class RDBDataTable(BaseDataTable):
         field_string = self.format_fields_string(field_list)
         template_string = self.format_template_string(template)
         query = "SELECT {} FROM {} WHERE {};".format(field_string, self._full_table_name, template_string)
-        res = self.exec_query(query)
-        return res
+        res = self.exec_query(query).fetchall()
+        return list(res)
 
     def delete_by_key(self, key_fields):
         """
@@ -144,7 +160,12 @@ class RDBDataTable(BaseDataTable):
         :param template: A template.
         :return: A count of the rows deleted.
         """
-        pass
+        self.validate_key_fields(key_fields)
+
+        key_string = self.format_key_string(key_fields)
+        query = "DELETE FROM {} WHERE {};".format(self._full_table_name, key_string)
+        res = self.exec_query(query)
+        return res.rowcount
 
     def delete_by_template(self, template):
         """
@@ -152,7 +173,12 @@ class RDBDataTable(BaseDataTable):
         :param template: Template to determine rows to delete.
         :return: Number of rows deleted.
         """
-        pass
+        self.validate_template_and_fields(template)
+        template_string = self.format_template_string(template)
+        query = "DELETE FROM {} where {};".format(self._full_table_name, template_string)
+        print(query)
+        res = self.exec_query(query)
+        return res.rowcount
 
     def update_by_key(self, key_fields, new_values):
         """
@@ -161,6 +187,14 @@ class RDBDataTable(BaseDataTable):
         :param new_values: A dict of field:value to set for updated row.
         :return: Number of rows updated.
         """
+        self.validate_key_fields(key_fields)
+        self.validate_template_and_fields(fields=new_values)
+        key_string = self.format_key_string(key_fields)
+        new_string = self.format_template_string(new_values)
+        query = "UPDATE {} SET {} WHERE {};".format(self._full_table_name, new_string, key_string)
+        res = self.exec_query(query)
+        return res.rowcount
+
 
     def update_by_template(self, template, new_values):
         """
@@ -169,7 +203,12 @@ class RDBDataTable(BaseDataTable):
         :param new_values: New values to set for matching fields.
         :return: Number of rows updated.
         """
-        pass
+        self.validate_template_and_fields(template, new_values)
+        template_string = self.format_template_string(template)
+        new_string = self.format_template_string(new_values)
+        query = "UPDATE {} SET {} WHERE {};".format(self._full_table_name, new_string, template_string)
+        res = self.exec_query(query)
+        return res.rowcount
 
     def insert(self, new_record):
         """
@@ -177,7 +216,18 @@ class RDBDataTable(BaseDataTable):
         :param new_record: A dictionary representing a row to add to the set of records.
         :return: None
         """
-        pass
+        self.validate_template_and_fields(fields=new_record)
+        fields = ""
+        values = ""
+        for k, v in new_record.items():
+            fields += k + ', '
+            values += '\"' + v + '\", '
+        fields = fields[:-2]
+        values = values[:-2]
+        query = "INSERT INTO {} ({}) VALUES ({});".format(self._full_table_name, fields, values)
+        print(query)
+        self.exec_query(query)
+        return None
 
     def get_rows(self):
         return self._rows
