@@ -9,6 +9,7 @@ import pandas as pd
 pd.set_option("display.width", 256)
 pd.set_option('display.max_columns', 20)
 
+PK_UNIQUE_ERROR = "Primary Key has to be unique!"
 
 class CSVDataTable(BaseDataTable):
     """
@@ -72,20 +73,25 @@ class CSVDataTable(BaseDataTable):
 
     def _add_row(self, r):
         if self._data["key_columns"] is None:
-            key_col = []
+            key_col = None
         else:
             key_col = list(self._data["key_columns"])
         if self._rows is None:
             self._rows = []
-        this_key_col_val = ""
-        for key in key_col:
-            if key not in r.keys() or not len(r[key]):
-                raise Exception("Some row does not have primary key info!")
-            this_key_col_val += (r[key] + '_')
-        this_key_col_val = this_key_col_val[:-1]
-        if this_key_col_val not in self._primary_keys_set:
+        if key_col:
+            this_key_col_val = ""
+            for key in key_col:
+                if key not in r.keys() or not len(r[key]):
+                    raise Exception("Some row does not have primary key info!")
+                this_key_col_val += (r[key] + '_')
+            this_key_col_val = this_key_col_val[:-1]
+            if this_key_col_val not in self._primary_keys_set:
+                self._rows.append(r)
+                self._primary_keys_set.add(this_key_col_val)
+            else:
+                raise Exception(PK_UNIQUE_ERROR)
+        else:
             self._rows.append(r)
-            self._primary_keys_set.add(this_key_col_val)
 
     def _load(self):
 
@@ -279,7 +285,7 @@ class CSVDataTable(BaseDataTable):
                 return index, True, old, old_key_val, new_key_val
             else:
                 return -1,True,-1,-1,-1
-            
+
     def update_by_key(self, key_fields, new_values):
         """
 
@@ -299,7 +305,7 @@ class CSVDataTable(BaseDataTable):
                     self._primary_keys_set.add(new_key_val)
                 return 1
             else:
-                raise Exception("Primary Keys has to be unique!")
+                raise Exception(PK_UNIQUE_ERROR)
         else:
             return 0
 
@@ -318,10 +324,10 @@ class CSVDataTable(BaseDataTable):
             row_primary_key_pair = []
             mod_primary = True
             for row in rows:
-                mod_primary = modify_primary
                 index, modify_primary, new, old_key_val, new_key_val = self.modify_list_content(row, new_values)
+                mod_primary = modify_primary
                 if index == -1:
-                    raise Exception("Primary Key has to be unique!")
+                    raise Exception(PK_UNIQUE_ERROR)
                 else:
                     if modify_primary:
                         row_primary_key_pair.append([new, old_key_val, new_key_val])
