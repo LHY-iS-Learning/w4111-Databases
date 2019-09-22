@@ -12,6 +12,10 @@ CONNECT_INFO = {
     "directory": str(os.path.abspath("../Data/Baseball")),
     "file_name": "People.csv"
 }
+
+def connect_fail(fn):
+    return {"directory": str(os.path.abspath("../Data/Baseball")), "file_name": fn}
+
 PRIMARY_KEY_SINGLE_FILED = ["playerID"]
 PRIMARY_KEY_SINGLE_VALUE = ["abadan01"]
 PRIMARY_KEY_SELECT_FIELDS = ["nameLast", "nameGiven", "weight", "height"]
@@ -53,11 +57,20 @@ INSERT_ROW_DUP_PK = {'playerID': 'aardsda01', 'birthYear': 'hijklmn', 'birthMont
 
 class TestCSVDataTable(unittest.TestCase):
 
-    def test_load_success(self):
-        pass
-
     def test_load_failure(self):
-        pass
+        with self.assertRaises(Exception) as context:
+            csv_tbl_s = CSVDataTable("people", connect_fail("3_people_dup.csv"), PRIMARY_KEY_SINGLE_FILED)
+        self.assertEqual(PK_UNIQUE_ERROR, str(context.exception))
+
+        with self.assertRaises(Exception) as context:
+            csv_tbl_m = CSVDataTable("people", connect_fail("3_people_dup.csv"), PRIMARY_KEY_MULTIPLE_FIELD)
+        self.assertEqual(PK_UNIQUE_ERROR, str(context.exception))
+
+        with self.assertRaises(Exception) as context:
+            csv_tbl_m = CSVDataTable("people", connect_fail("2_people_missing_key.csv"), PRIMARY_KEY_MULTIPLE_FIELD)
+        self.assertEqual("Some row does not have primary key info!", str(context.exception))
+
+
 
     def test_find_by_primary_key_success(self):
         csv_tbl_s = CSVDataTable("people", CONNECT_INFO, PRIMARY_KEY_SINGLE_FILED)

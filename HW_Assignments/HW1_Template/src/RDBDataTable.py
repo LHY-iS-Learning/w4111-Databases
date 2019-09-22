@@ -1,4 +1,5 @@
 from src.BaseDataTable import BaseDataTable
+from src.CSVDataTable import PK_UNIQUE_ERROR
 import pymysql
 
 
@@ -128,7 +129,7 @@ class RDBDataTable(BaseDataTable):
         query = "SELECT {} FROM {} WHERE {};".format(field_string, self._full_table_name, key_string)
         res = self.exec_query(query).fetchall()
         if len(res) > 1:
-            raise Exception("Primary Key is not unique!")
+            raise Exception(PK_UNIQUE_ERROR)
         elif len(res) == 0:
             return None
         else:
