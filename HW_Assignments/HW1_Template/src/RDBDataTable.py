@@ -109,7 +109,7 @@ class RDBDataTable(BaseDataTable):
     def exec_query(self, query):
         cursor = self.cnx.cursor()
         cursor.execute(query)
-        self.cnx.commit()
+        # self.cnx.commit()
         return cursor
 
     def find_by_primary_key(self, key_fields, field_list=None):
@@ -176,7 +176,6 @@ class RDBDataTable(BaseDataTable):
         self.validate_template_and_fields(template)
         template_string = self.format_template_string(template)
         query = "DELETE FROM {} where {};".format(self._full_table_name, template_string)
-        print(query)
         res = self.exec_query(query)
         return res.rowcount
 

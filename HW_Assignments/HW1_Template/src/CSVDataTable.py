@@ -279,10 +279,7 @@ class CSVDataTable(BaseDataTable):
                 return index, True, old, old_key_val, new_key_val
             else:
                 return -1,True,-1,-1,-1
-
-
-
-
+            
     def update_by_key(self, key_fields, new_values):
         """
 
