@@ -107,10 +107,11 @@ class RDBDataTable(BaseDataTable):
                 key_string += " AND "
         return key_string
 
-    def exec_query(self, query):
+    def exec_query(self, query, commit=False):
         cursor = self.cnx.cursor()
         cursor.execute(query)
-        # self.cnx.commit()
+        if commit:
+            self.cnx.commit()
         return cursor
 
     def find_by_primary_key(self, key_fields, field_list=None):
@@ -225,7 +226,6 @@ class RDBDataTable(BaseDataTable):
         fields = fields[:-2]
         values = values[:-2]
         query = "INSERT INTO {} ({}) VALUES ({});".format(self._full_table_name, fields, values)
-        print(query)
         self.exec_query(query)
         return None
 

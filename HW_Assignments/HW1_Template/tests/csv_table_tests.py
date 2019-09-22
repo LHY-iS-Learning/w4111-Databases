@@ -70,8 +70,6 @@ class TestCSVDataTable(unittest.TestCase):
             csv_tbl_m = CSVDataTable("people", connect_fail("2_people_missing_key.csv"), PRIMARY_KEY_MULTIPLE_FIELD)
         self.assertEqual("Some row does not have primary key info!", str(context.exception))
 
-
-
     def test_find_by_primary_key_success(self):
         csv_tbl_s = CSVDataTable("people", CONNECT_INFO, PRIMARY_KEY_SINGLE_FILED)
         csv_tbl_m = CSVDataTable("people", CONNECT_INFO, PRIMARY_KEY_MULTIPLE_FIELD)
