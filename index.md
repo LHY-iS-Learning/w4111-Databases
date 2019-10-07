@@ -112,3 +112,13 @@ notebook and/or PDF of a PowerPoint presentation.
 - Lecture 3: More relational/SQL, DB Applications, web applications.
     - [HTML Format](Lectures/Lecture_3/w4111-L3-s2019-RelationalModelDetails-V1.html)
     - [Jupyter Notebook Format](Lectures/Lecture_3/w4111-L3-s2019-RelationalModelDetails-V1.ipynb)  
+- Lecture 4: SQL Details
+    - [HTML Format](Lectures/Lecture_4/w4111-L4-f2019-SQLDetails-REST.html)
+    - [Jupyter Notebook Format](Lectures/Lecture_4/w4111-L4-f2019-SQLDetails-REST.ipynb)
+- Makeup Lectures:
+    - Jupyter Notebooks:
+        - [Part 1](Lectures/Makeup_Lectures/w4111-Makeup-F2019-RelationalModelREST-Part-1.ipynb)
+        - [Part 2](Lectures/Makeup_Lectures/w4111-Makeup-F2019-RelationalModelREST-Part-2.ipynb)
+    - HTML:
+        - [Part 1](Lectures/Makeup_Lectures/w4111-Makeup-F2019-RelationalModelREST-Part-1.html)
+        - [Part 2](Lectures/Makeup_Lectures/w4111-Makeup-F2019-RelationalModelREST-Part-2.html)
