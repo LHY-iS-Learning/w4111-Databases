@@ -85,20 +85,72 @@ AS
 Using Question 3, only include groups with an average weight >180 lbs,
 also return the average weight of the group. This time, order by ascending
 */
-CREATE VIEW AverageHeightWeight(X, X, X, X)
+CREATE VIEW AverageHeightWeight(birthYear, num, avgHeight, avgWeight)
 AS
-
-
-;
-select * from schools where state = 'NY';
+	SELECT
+		avg_weight.birthYear, AverageHeight.num, AverageHeight.avgHeight, avgWeight
+	FROM
+		(SELECT
+			birthYear, avg(weight) as avgWeight
+		FROM
+			People
+		GROUP BY
+			birthYear
+	) avg_weight
+	JOIN
+		AverageHeight
+	ON
+		AverageHeight.birthYear = avg_weight.birthYear
+	WHERE
+		avgWeight > 180
+	ORDER BY
+		birthYear
+	ASC;
 
 /*QUESTION 6
 Find the players who made it into the hall of fame who played for a college located in NY
 return the player ID, first name, last name, and school ID. Order the players by School alphabetically.
 Update all entries with full name Columbia University to 'Columbia University!' in the schools table
 */
-SELECT 1, 1, 1, 1 -- replace with your code
-;
+SELECT
+	People.playerID, nameFirst, nameLast, schoolID
+FROM
+	People
+JOIN
+	(SELECT
+		college_hof.playerID, Schools.schoolID
+	FROM
+		Schools
+	JOIN
+		(SELECT
+			CollegePlaying.playerID, schoolID
+		FROM
+			HallofFame
+		JOIN
+			CollegePlaying
+		ON
+			HallofFame.playerID = CollegePlaying.playerID
+		) college_hof
+	ON
+		college_hof.schoolID = Schools.schoolID
+	WHERE
+		Schools.state = "NY"
+	) ny_schools
+ON
+	People.playerID = ny_schools.playerID
+ORDER BY
+	schoolID
+ASC;
+
+
+SET SQL_SAFE_UPDATES = 0;
+UPDATE
+	Schools
+SET
+	name_full = "Columbia University!"
+WHERE
+	name_full = "Columbia University";
+SET SQL_SAFE_UPDATES = 1;
 
 /*QUESTION 7
 Find the team id, yearid and average HBP for each team using a subquery.
@@ -106,5 +158,19 @@ Limit the total number of entries returned to 100
 group the entries by team and year and order by descending values
 [hint] be careful to only include entries where AB is > 0
 */
-SELECT 1, 1, 1 -- replace with your code
-;
+SELECT
+	teamID, yearID, avg(HBP)
+FROM
+	(SELECT
+		teamID, yearID, HBP
+	FROM
+		teams
+	WHERE
+		AB > 0
+	)t
+GROUP BY
+	teamID, yearID
+ORDER BY
+	avg(HBP)
+DESC
+LIMIT 100;
