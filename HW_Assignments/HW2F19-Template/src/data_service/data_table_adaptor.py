@@ -1,15 +1,25 @@
 import pymysql
 import src.data_service.dbutils as dbutils
 import src.data_service.RDBDataTable as RDBDataTable
+import logging
+
+
 
 # The REST application server app.py will be handling multiple requests over a long period of time.
 # It is inefficient to create an instance of RDBDataTable for each request.  This is a cache of created
 # instances.
 _db_tables = {}
+_conn = pymysql.connect(
+    host='localhost',
+    port=3306,
+    user='dbuser',
+    password='dbuserdbuser',
+    cursorclass=pymysql.cursors.DictCursor
+)
+
 
 def get_rdb_table(table_name, db_name, key_columns=None, connect_info=None):
     """
-
     :param table_name: Name of the database table.
     :param db_name: Schema/database name.
     :param key_columns: This is a trap. Just use None.
@@ -51,16 +61,19 @@ def get_databases():
 
     :return: A list of databases/schema at this endpoint.
     """
-
-    # -- TO IMPLEMENT --
-    pass
-
-
-
+    # https://stackoverflow.com/questions/44893565/get-list-of-mysql-databases-with-python
+    databases = "show databases;"
+    res, d = dbutils.run_q(databases, conn=_conn)
+    return [x['Database'] for x in d]
 
 
+def get_tables(db):
 
-
-
-
+    q = "show tables from %s;" % db
+    res, d = dbutils.run_q(q, conn=_conn)
+    res = []
+    for x in d:
+        for _,y in x.items():
+           res.append(y)
+    return res
 

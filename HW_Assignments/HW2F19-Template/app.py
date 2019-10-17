@@ -184,12 +184,10 @@ def dbs():
     :return: A JSON object/list containing the databases at this endpoint.
     """
     # -- TO IMPLEMENT --
+    inputs = log_and_extract_input(dbs, None)
 
-    # Your code  goes here.
-
-    # Hint: Implement the function in data_table_adaptor
-    #
-
+    rsp = Response(json.dumps(dta.get_databases()), status=200, content_type="application/json")
+    return rsp
 
 
 @application.route("/api/databases/<dbname>", methods=["GET"])
@@ -200,12 +198,9 @@ def tbls(dbname):
     :return: List of tables in the database.
     """
 
-    inputs = log_and_extract_input(dbs, None)
-
-    # Your code  goes here.
-
-    # Hint: Implement the function in data_table_adaptor
-    #
+    inputs = log_and_extract_input(tbls, None)
+    rsp = Response(json.dumps(dta.get_tables(dbname)), status=200, content_type="application/json")
+    return rsp
 
 
 @application.route('/api/<dbname>/<resource>/<primary_key>', methods=['GET', 'PUT', 'DELETE'])
@@ -228,28 +223,31 @@ def resource_by_id(dbname, resource, primary_key):
         # SOME CODE GOES HERE
         #
         # -- TO IMPLEMENT --
-
         if request.method == 'GET':
-
-            #
-            # SOME CODE GOES HERE
-            #
-            # -- TO IMPLEMENT --
-            pass
+            try:
+                fields = context['fields']
+            except:
+                fields = None
+            r_table = dta.get_rdb_table(resource, dbname)
+            key = primary_key.split(_key_delimiter)
+            res = r_table.find_by_primary_key(key, field_list=fields)
+            rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+            return rsp
 
         elif request.method == 'DELETE':
-            #
-            # SOME CODE GOES HERE
-            #
-            # -- TO IMPLEMENT --
-            pass
+            r_table = dta.get_rdb_table(resource, dbname)
+            key = primary_key.split(_key_delimiter)
+            res = r_table.delete_by_key(key)
+            rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+            return rsp
 
         elif request.method == 'PUT':
-            #
-            # SOME CODE GOES HERE
-            #
-            # -- TO IMPLEMENT --
-            pass
+            r_table = dta.get_rdb_table(resource, dbname)
+            key = primary_key.split(_key_delimiter)
+            body = context['body']
+            res = r_table.update_by_key(key, body)
+            rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+            return rsp
 
     except Exception as e:
         print(e)
@@ -269,20 +267,24 @@ def get_resource(dbname, resource_name):
         #
         # -- TO IMPLEMENT --
 
-
         if request.method == 'GET':
-            #
-            # SOME CODE GOES HERE
-            #
-            # -- TO IMPLEMENT --
-            pass
+            template = context['query_params']
+            try:
+                fields = context['fields']
+            except:
+                fields = None
+            r_table = dta.get_rdb_table(resource_name, dbname)
+            res = r_table.find_by_template(template, fields)
+            rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+            return rsp
 
         elif request.method == 'POST':
-            #
-            # SOME CODE GOES HERE
-            #
-            # -- TO IMPLEMENT --
-            pass
+            r_table = dta.get_rdb_table(resource_name, dbname)
+            body = context["body"]
+            res = r_table.insert(body)
+            rsp = Response(json.dumps(res, default=str), status=200, content_type="application/json")
+            return rsp
+
         else:
             result = "Invalid request."
             return result, 400, {'Content-Type': 'text/plain; charset=utf-8'}

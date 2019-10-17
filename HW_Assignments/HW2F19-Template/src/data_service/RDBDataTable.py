@@ -21,8 +21,6 @@ import json
 import src.data_service.dbutils as dbutils
 
 # You do not need to do anything about the logging stuff. You can just ignore, or you can use if you want.
-import logging
-logger = logging.getLogger()
 
 # Makes pretty print the RDBDataTable rows a little better.
 pd.set_option('display.width', 256)
@@ -41,7 +39,7 @@ class RDBDataTable():
     # NOTE: You may just use the default connector if you want.
     _default_connect_info = {
         'host': 'localhost',
-        'user': 'root',
+        'user': 'dbuser',
         'password': 'dbuserdbuser',
         'db': 'lahman2019clean',
         'port': 3306
@@ -89,7 +87,7 @@ class RDBDataTable():
 
         self._connect_info = connect_info
         self._row_count = None
-        self._key_columns = None
+        self._key_columns = self.get_primary_key_columns()
         self._sample_rows = None
         self._related_resources = None
         self_columns = None
@@ -126,7 +124,9 @@ class RDBDataTable():
         :return: Returns the count of the number of rows in the table.
         """
 
-        # -- TO IMPLEMENT --
+        sql = "SELECT {} FROM {};".format("COUNT(1)", self._full_table_name)
+        res, data = dbutils.run_q(sql=sql, args=None, conn=self._cnx, commit=True, fetch=True)
+        return list(data[0].values())[0]
 
     def get_primary_key_columns(self):
         """
@@ -138,6 +138,12 @@ class RDBDataTable():
 
         # Hint. Google "get primary key columns mysql"
         # Hint. THE ORDER OF THE COLUMNS IN THE KEY DEFINITION MATTERS.
+        sql = "SHOW KEYS FROM {} WHERE KEY_NAME = 'PRIMARY'".format(self._full_table_name)
+        res, data = dbutils.run_q(sql=sql, args=None, conn=self._cnx, commit=True, fetch=True)
+        res = []
+        for d in data:
+            res.append(d['Column_name'])
+        return res
 
     def get_sample_rows(self, no_of_rows=_rows_to_print):
         """
